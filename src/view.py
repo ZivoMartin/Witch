@@ -1,6 +1,5 @@
 import pygame as pg
 from random import randint
-from src.moves_function import *
 import math
 
 class View():
@@ -34,6 +33,7 @@ class View():
             self.display_explosions()
             self.move_player()
             self.display_monsters()
+            self.move_monsters()
             pg.draw.circle(self.screen, "black", self.player_pos, 20)
             # self.screen.blit(self.personnage_img, self.player_pos)
             pg.display.flip()
@@ -54,8 +54,9 @@ class View():
                 self.moves[self.moves_dico[event.unicode]][0] = False
             elif(event.type == pg.MOUSEBUTTONDOWN and event.button == 1):
                 x1, y1, x2, y2 = self.player_pos[0], self.player_pos[1], event.pos[0], event.pos[1]
-                m, d, b, f = get_param(x1, y1, x2, y2)
-                self.bullets.append({"x": x1, "y": y1, "m": m, "dist": d-self.bullets_speed, "b": b, "f": f, "x2": x2, "y2": y2})
+                if(x1 != x2):
+                    m, d, b, f = get_param(x1, y1, x2, y2)
+                    self.bullets.append({"x": x1, "y": y1, "m": m, "dist": d-self.bullets_speed, "b": b, "f": f, "x2": x2, "y2": y2})
         
     def display_bullets(self):
         for i in range(len(self.bullets)):
@@ -77,6 +78,27 @@ class View():
                 self.player_pos[1] += self.moves[i][1][1]
                 self.try_to_switch_map()  
                 
+    def move_monsters(self):
+        nb_monster = len(self.monsters)
+        for i in range(nb_monster):
+            x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
+            if(not self.its_a_wall(x, y)):
+                self.monsters[i]["x"] = x
+                self.monsters[i]["y"] = y
+                if(self.monsters[i]["move"][2] == 0):
+                    self.change_random_move(i)
+                else:
+                    self.monsters[i]["move"][2] -= 1
+            else:
+                self.change_random_move(i)
+                        
+    def change_random_move(self, i):
+        self.monsters[i]["move"][0] = randint(-self.monster_speed, self.monster_speed)
+        self.monsters[i]["move"][1] = self.monster_speed - abs(self.monsters[i]["move"][0])
+        if(randint(1, 2) == 1):
+            self.monsters[i]["move"][1] *= -1
+        self.monsters[i]["move"][2] = 15
+                
     def display_map(self):
         for i in range(self.nb_case_horizontal):
             for j in range(self.nb_case_vertical):
@@ -86,39 +108,39 @@ class View():
                     self.screen.blit(self.wall_img, (i*self.width_case, j*self.height_case))
                 elif(self.map_tab[i][j] == 2):
                     if(self.out_open):
-                        pg.draw.rect(self.screen, self.next_room_color, (i*self.width_case, j*self.height_case, self.width_case, self.height_case)) 
+                        pg.draw.rect(self.screen, self.next_room_color, (i*self.width_case, (j+1)*self.height_case, self.width_case, self.height_case)) 
                     else:
-                        self.screen.blit(self.floor_img, (i*self.width_case, j*self.height_case))
+                        self.screen.blit(self.floor_img, (i*self.width_case, (j+1)*self.height_case))
     
     def display_monsters(self):
         nb_ghost = len(self.monsters)
         for i in range(nb_ghost):
-            if(self.monsters[i][3] > 0):
-                pg.draw.circle(self.screen, "red", (self.monsters[i][0], self.monsters[i][1]), self.width_monster)
-                self.monsters[i][3] -= 1
+            if(self.monsters[i]["red"] > 0):
+                pg.draw.circle(self.screen, "red", (self.monsters[i]["x"], self.monsters[i]["y"]), self.width_monster)
+                self.monsters[i]["red"] -= 1
             else:
-                pg.draw.circle(self.screen, "dark green", (self.monsters[i][0], self.monsters[i][1]), self.width_monster)
+                pg.draw.circle(self.screen, "dark green", (self.monsters[i]["x"], self.monsters[i]["y"]), self.width_monster)
 
 
     def generate_ennemys(self):
         self.monsters = []
         for i in range(self.nb_monster_per_room):
-            x, y = randint(10, self.size[0]-10), randint(10, self.size[1]-10)
+            x, y = randint(0, self.size[0]-1), randint(0, self.size[1]-1)
             x_case, y_case = self.convert(x, y)
             while(self.map_tab[x_case][y_case] == 1):
                 x, y = randint(0, self.size[0]-1), randint(10, self.size[1]-10)
                 x_case, y_case = self.convert(x, y)
-            self.monsters.append([x, y, self.base_hp_monsters, 0])
+            self.monsters.append({"x": x, "y": y, "hp": self.base_hp_monsters, "red": 0, "move": [0, 0, 0]})
             
     def monster_touched_by_bullet(self, indice_bullet):
         x, y = self.bullets[indice_bullet]["x"], self.bullets[indice_bullet]["y"]
         nb_monster = len(self.monsters)
         for i in range(nb_monster):
-            x_m, y_m = self.monsters[i][0], self.monsters[i][1]
+            x_m, y_m = self.monsters[i]["x"], self.monsters[i]["y"]
             if(x < x_m+self.width_monster and x>x_m-self.width_monster and y < y_m+self.height_monster and y>y_m-self.height_monster):
-                self.monsters[i][3] = 10
-                self.monsters[i][2] -= self.bullet_damage
-                if(self.monsters[i][2] <= 0):
+                self.monsters[i]["red"] = 10
+                self.monsters[i]["hp"] -= self.bullet_damage
+                if(self.monsters[i]["hp"] <= 0):
                     self.monsters.pop(i)
                 
                 return True
@@ -142,7 +164,12 @@ class View():
         return self.coord_valid(i, j) and self.map_tab[i][j] == 2
     
     def convert(self, i, j):
-        return int(i/self.width_case), int(j/self.height_case)
+        x, y = int(i/self.width_case), int(j/self.height_case)
+        if(x == self.nb_case_horizontal):
+            x -= 1
+        if(y == self.nb_case_vertical):
+            y -= 1
+        return x, y
         
     def generate_random_coord(self):
         return [randint(0, self.size[0]), randint(0, self.size[1])]
@@ -168,7 +195,7 @@ class View():
         return map_tab
     
     def coord_valid(self, i, j):
-        return i>=0 and j>=0 and i<self.nb_case_horizontal and j<self.nb_case_vertical
+        return i>0 and j>0 and i<(self.nb_case_horizontal) and j<(self.nb_case_vertical)
         
     def there_is_a_wall_near(self, map_tab, i, j):  
         return (i-1>=0 and map_tab[i-1][j] == 1) or (i+1<self.nb_case_horizontal and map_tab[i+1][j] == 1) or (j+1<self.nb_case_vertical and map_tab[i][j+1] == 1) or (j-1>=0 and map_tab[i][j-1] == 1)
@@ -181,7 +208,7 @@ class View():
             i, j = self.convert(self.player_pos[0], self.player_pos[1])
             
     def try_to_switch_map(self):
-        if(self.its_change_room_case(self.player_pos[0], self.player_pos[1])):
+        if(self.out_open and self.its_change_room_case(self.player_pos[0], self.player_pos[1])):
             self.map_tab = self.generate_random_map()
             self.spawn_player()
             self.generate_ennemys()
@@ -207,6 +234,7 @@ class View():
         self.width_case = int(self.size[0]/self.nb_case_horizontal)
         self.height_case = int(self.size[1]/self.nb_case_vertical)
         self.speed = 4
+        self.monster_speed = 6
         self.moves = [[False, (self.speed, 0)], [False, (-self.speed, 0)], [False, (0, self.speed)], [False, (0, -self.speed)]]
         self.player_pos = [int(self.size[0]/2), int(self.size[1]/2)]
         self.moves_dico = {'z': 3, 'q': 1, 'd': 0, 's': 2}
