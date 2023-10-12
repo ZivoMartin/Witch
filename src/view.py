@@ -7,6 +7,10 @@ class View():
     
     def __init__(self, img_path):
         self.img_path = img_path
+        pg.init()
+        screen_info = pg.display.Info()
+        self.size = (screen_info.current_w, screen_info.current_h)
+        self.screen = pg.display.set_mode(self.size, pg.FULLSCREEN)
         self.init_const()
         self.build_img()
         self.map_tab = self.generate_random_map()
@@ -14,10 +18,6 @@ class View():
         self.generate_ennemys()
         self.life_time_explosions = 20
         self.bullets_speed = 10
-        pg.init()
-        screen_info = pg.display.Info()
-        self.size = (screen_info.current_w, screen_info.current_h)
-        self.screen = pg.display.set_mode(self.size, pg.FULLSCREEN)
         clock = pg.time.Clock()
         
         while self.running:
@@ -81,24 +81,44 @@ class View():
     def move_monsters(self):
         nb_monster = len(self.monsters)
         for i in range(nb_monster):
-            x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
-            if(not self.its_a_wall(x, y)):
-                self.monsters[i]["x"] = x
-                self.monsters[i]["y"] = y
-                if(self.monsters[i]["move"][2] == 0):
-                    self.change_random_move(i)
+            if(self.monsters[i]["move"][2] != -1):
+
+                x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
+                if(not self.its_a_wall(x, y)):
+                    self.monsters[i]["x"] = x
+                    self.monsters[i]["y"] = y
+                    if(self.monsters[i]["move"][2] == 0):
+                        self.change_random_move(i)
+                    else:
+                        self.monsters[i]["move"][2] -= 1
                 else:
-                    self.monsters[i]["move"][2] -= 1
+                    self.change_random_move(i)
             else:
-                self.change_random_move(i)
-                        
+                self.get_next_move(i)     
+                x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
+                self.monsters[i]["x"], self.monsters[i]["y"] = x, y
+
     def change_random_move(self, i):
         self.monsters[i]["move"][0] = randint(-self.monster_speed, self.monster_speed)
         self.monsters[i]["move"][1] = self.monster_speed - abs(self.monsters[i]["move"][0])
         if(randint(1, 2) == 1):
             self.monsters[i]["move"][1] *= -1
         self.monsters[i]["move"][2] = 15
-                
+
+    def get_next_move(self, i):
+        x_p, y_p, x_m, y_m = self.player_pos[0], self.player_pos[1], self.monsters[i]["x"], self.monsters[i]["y"]
+        factor_x, factor_y = -1, -1
+        if(x_m-x_p < 0):
+            factor_x = 1
+        if(y_m-y_p < 0):
+            factor_y = 1
+        if(randint(0, abs(x_m-x_p)+abs(y_m-y_p)) < abs(x_m-x_p)):
+            self.monsters[i]["move"][0] = factor_x*self.monster_speed
+            self.monsters[i]["move"][1] = 0
+        else:
+            self.monsters[i]["move"][0] = 0
+            self.monsters[i]["move"][1] = factor_y*self.monster_speed
+
     def display_map(self):
         for i in range(self.nb_case_horizontal):
             for j in range(self.nb_case_vertical):
@@ -111,7 +131,7 @@ class View():
                         pg.draw.rect(self.screen, self.next_room_color, (i*self.width_case, (j+1)*self.height_case, self.width_case, self.height_case)) 
                     else:
                         self.screen.blit(self.floor_img, (i*self.width_case, (j+1)*self.height_case))
-    
+
     def display_monsters(self):
         nb_ghost = len(self.monsters)
         for i in range(nb_ghost):
@@ -130,7 +150,7 @@ class View():
             while(self.map_tab[x_case][y_case] == 1):
                 x, y = randint(0, self.size[0]-1), randint(10, self.size[1]-10)
                 x_case, y_case = self.convert(x, y)
-            self.monsters.append({"x": x, "y": y, "hp": self.base_hp_monsters, "red": 0, "move": [0, 0, 0]})
+            self.monsters.append({"x": x, "y": y, "hp": self.base_hp_monsters, "red": 0, "move": [0, 0, -1]})
             
     def monster_touched_by_bullet(self, indice_bullet):
         x, y = self.bullets[indice_bullet]["x"], self.bullets[indice_bullet]["y"]
@@ -165,10 +185,10 @@ class View():
     
     def convert(self, i, j):
         x, y = int(i/self.width_case), int(j/self.height_case)
-        if(x == self.nb_case_horizontal):
-            x -= 1
-        if(y == self.nb_case_vertical):
-            y -= 1
+        if(i<0):
+            x = -1
+        if(y<0):
+            y = -1
         return x, y
         
     def generate_random_coord(self):
@@ -195,7 +215,7 @@ class View():
         return map_tab
     
     def coord_valid(self, i, j):
-        return i>0 and j>0 and i<(self.nb_case_horizontal) and j<(self.nb_case_vertical)
+        return i>=0 and j>=0 and i<(self.nb_case_horizontal) and j<(self.nb_case_vertical)
         
     def there_is_a_wall_near(self, map_tab, i, j):  
         return (i-1>=0 and map_tab[i-1][j] == 1) or (i+1<self.nb_case_horizontal and map_tab[i+1][j] == 1) or (j+1<self.nb_case_vertical and map_tab[i][j+1] == 1) or (j-1>=0 and map_tab[i][j-1] == 1)
@@ -220,8 +240,7 @@ class View():
         self.width_monster = 20
         self.height_monster = 20
         self.base_hp_monsters = 10
-        self.nb_monster_per_room = 10
-        self.size = (2000, 1050)
+        self.nb_monster_per_room = 5
         self.bg_color = (0, 0, 0)
         self.next_room_color = (255, 246, 159)
         self.bullets_color = (228, 91, 0)
@@ -244,7 +263,7 @@ class View():
         self.floor_img = pg.image.load(self.img_path + "/floor.png")  
         self.personnage_img = pg.image.load(self.img_path + "/personnage.jpg")  
         self.explosion_img = pg.image.load(self.img_path + "/explosion.jpg")  
-        self.personnage_img = pg.transform.scale(self.personnage_img, (30, 70))
+        self.personnage_img = pg.transform.scale(self.personnage_img, (self.width_case, self.height_case))
         self.explosion_img = pg.transform.scale(self.explosion_img, (10, 10))
         self.wall_img = pg.transform.scale(self.wall_img, (self.width_case, self.height_case))
         self.floor_img = pg.transform.scale(self.floor_img, (self.width_case, self.height_case))
