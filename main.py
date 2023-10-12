@@ -3,6 +3,8 @@ import os
 
 
 def main():
-    view = View("/net/cremi/mzivojinovic/espaces/Witch/img")
+    
+    #"/net/cremi/mzivojinovic/espaces/Witch/img"
+    view = View("/home/martin/Travail/Perso/Witch/img")
 
 main()
