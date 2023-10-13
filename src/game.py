@@ -2,14 +2,16 @@ import pygame as pg
 from random import randint
 import math
 
-class View():
+class Game():
     
     
     def __init__(self, img_path):
         self.img_path = img_path
         pg.init()
+        pg.font.init()
         screen_info = pg.display.Info()
-        self.size = (screen_info.current_w, screen_info.current_h)
+        self.menu_bar_height =30
+        self.size = (screen_info.current_w, screen_info.current_h-self.menu_bar_height)
         self.screen = pg.display.set_mode(self.size, pg.FULLSCREEN)
         self.init_const()
         self.build_img()
@@ -21,21 +23,25 @@ class View():
         clock = pg.time.Clock()
         
         while self.running:
-            self.screen.fill(self.bg_color)
             self.iter += 1
-            if(len(self.monsters) == 0):
-                self.out_open = True
-            else:
-                self.out_open = False
+            self.screen.fill(self.bg_color)
             self.event_gestion()
-            self.display_map()
-            self.display_bullets()
-            self.display_explosions()
-            self.move_player()
-            self.display_monsters()
-            self.move_monsters()
-            pg.draw.circle(self.screen, "black", self.player_pos, 20)
-            # self.screen.blit(self.personnage_img, self.player_pos)
+            if(not self.current_hp_player<=0):
+                if(len(self.monsters) == 0):
+                    self.out_open = True
+                else:
+                    self.out_open = False
+                self.display_map()
+                self.display_bullets()
+                self.display_explosions()
+                self.move_player()
+                self.display_monsters()
+                self.move_monsters()
+                pg.draw.rect(self.screen, self.health_bar_color, (0, self.size[1]-8, self.current_hp_player*self.size[0]/self.max_hp_player, self.menu_bar_height+8))
+                pg.draw.circle(self.screen, "black", self.player_pos, 20)
+
+            else:
+                self.screen.blit(self.game_over_txt, (int(self.size[0]*0.35), int(self.size[1]*0.4)))
             pg.display.flip()
             clock.tick(60)
         pg.quit()
@@ -47,16 +53,17 @@ class View():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.running = False
-            if(event.type == pg.KEYDOWN):
-                if(event.unicode in self.moves_dico):
-                    self.moves[self.moves_dico[event.unicode]][0] = True
-            elif(event.type == pg.KEYUP and event.unicode in self.moves_dico):
-                self.moves[self.moves_dico[event.unicode]][0] = False
-            elif(event.type == pg.MOUSEBUTTONDOWN and event.button == 1):
-                x1, y1, x2, y2 = self.player_pos[0], self.player_pos[1], event.pos[0], event.pos[1]
-                if(x1 != x2):
-                    m, d, b, f = get_param(x1, y1, x2, y2)
-                    self.bullets.append({"x": x1, "y": y1, "m": m, "dist": d-self.bullets_speed, "b": b, "f": f, "x2": x2, "y2": y2})
+            if(self.current_hp_player > 0):
+                if(event.type == pg.KEYDOWN):
+                    if(event.unicode in self.moves_dico):
+                        self.moves[self.moves_dico[event.unicode]][0] = True
+                elif(event.type == pg.KEYUP and event.unicode in self.moves_dico):
+                    self.moves[self.moves_dico[event.unicode]][0] = False
+                elif(event.type == pg.MOUSEBUTTONDOWN and event.button == 1):
+                    x1, y1, x2, y2 = self.player_pos[0], self.player_pos[1], event.pos[0], event.pos[1]
+                    if(x1 != x2):
+                        m, d, b, f = get_param(x1, y1, x2, y2)
+                        self.bullets.append({"x": x1, "y": y1, "m": m, "dist": d-self.bullets_speed, "b": b, "f": f, "x2": x2, "y2": y2})
         
     def display_bullets(self):
         for i in range(len(self.bullets)):
@@ -96,6 +103,8 @@ class View():
                 self.get_next_move(i)     
                 x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
                 self.monsters[i]["x"], self.monsters[i]["y"] = x, y
+                if(self.player_pos[0]<x+30 and self.player_pos[0]>x-30 and self.player_pos[1]<y+30 and self.player_pos[1]>y-30):
+                    self.current_hp_player -= self.damage_monster
     
     def wall_between_monster_player(self, i):
         x_p, y_p, x_m, y_m = self.player_pos[0], self.player_pos[1], self.monsters[i]["x"], self.monsters[i]["y"]
@@ -114,6 +123,7 @@ class View():
                 return True
         return False
 
+    
     def change_random_move(self, i):
         self.monsters[i]["move"][0] = randint(-self.monster_speed, self.monster_speed)
         self.monsters[i]["move"][1] = self.monster_speed - abs(self.monsters[i]["move"][0])
@@ -146,10 +156,8 @@ class View():
                     self.screen.blit(self.wall_img, (i*self.width_case, j*self.height_case))
                 elif(self.map_tab[i][j] == 2):
                     if(self.out_open):
-                        print("open")
                         pg.draw.rect(self.screen, self.next_room_color, (i*self.width_case, j*self.height_case, self.width_case, self.height_case)) 
                     else:
-                        print(len(self.monsters))
                         self.screen.blit(self.floor_img, (i*self.width_case, j*self.height_case))
 
     def display_monsters(self):
@@ -249,6 +257,7 @@ class View():
             
     def try_to_switch_map(self):
         if(self.out_open and self.its_change_room_case(self.player_pos[0], self.player_pos[1])):
+            self.monster_speed += 2
             self.map_tab = self.generate_random_map()
             self.spawn_player()
             self.generate_ennemys()
@@ -260,12 +269,16 @@ class View():
         self.width_monster = 20
         self.height_monster = 20
         self.base_hp_monsters = 10
-        self.nb_monster_per_room = 10
+        self.nb_monster_per_room = 6
         self.bg_color = (0, 0, 0)
+        self.current_hp_player = 100
+        self.max_hp_player = 100
+        self.health_bar_color = (150, 0, 0)
         self.next_room_color = (255, 246, 159)
         self.bullets_color = (228, 91, 0)
         self.iter = 0
         self.bullet_damage = 2
+        self.damage_monster = 1
         self.running = True
         self.out_open = False
         self.nb_case_vertical = 40
@@ -287,6 +300,9 @@ class View():
         self.explosion_img = pg.transform.scale(self.explosion_img, (10, 10))
         self.wall_img = pg.transform.scale(self.wall_img, (self.width_case, self.height_case))
         self.floor_img = pg.transform.scale(self.floor_img, (self.width_case, self.height_case))
+        self.font = pg.font.SysFont('Comic Sans MS', 300)
+        self.game_over_txt = self.font.render('Game Over', False, (200, 0, 0))
+
 
 def get_param(x1, y1, x2, y2):
     m = (y1-y2)/(x1-x2)
