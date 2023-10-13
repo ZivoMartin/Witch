@@ -81,7 +81,7 @@ class View():
     def move_monsters(self):
         nb_monster = len(self.monsters)
         for i in range(nb_monster):
-            if(self.wall_between_monster_player(self, i)):
+            if(self.wall_between_monster_player(i)):
                 x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
                 if(not self.its_a_wall(x, y)):
                     self.monsters[i]["x"] = x
@@ -98,7 +98,21 @@ class View():
                 self.monsters[i]["x"], self.monsters[i]["y"] = x, y
     
     def wall_between_monster_player(self, i):
-        pass
+        x_p, y_p, x_m, y_m = self.player_pos[0], self.player_pos[1], self.monsters[i]["x"], self.monsters[i]["y"]
+        factor_x, factor_y = -1, -1
+        if(x_m-x_p < 0):
+            factor_x = 1
+        if(y_m-y_p < 0):
+            factor_y = 1
+        while(not (x_m <= x_p+self.width_case and x_m>=x_p-self.width_case and y_m <= y_p+self.height_case and y_m>=y_p-self.height_case)):
+            if(randint(0, abs(x_m-x_p)+abs(y_m-y_p)) < abs(x_m-x_p)):
+                x_m += factor_x*self.monster_speed
+            else:
+                y_m += factor_y*self.monster_speed
+            x, y = self.convert(x_m, y_m)
+            if(self.map_tab[x][y] == 1):
+                return True
+        return False
 
     def change_random_move(self, i):
         self.monsters[i]["move"][0] = randint(-self.monster_speed, self.monster_speed)
@@ -120,6 +134,8 @@ class View():
         else:
             self.monsters[i]["move"][0] = 0
             self.monsters[i]["move"][1] = factor_y*self.monster_speed
+            
+        
 
     def display_map(self):
         for i in range(self.nb_case_horizontal):
@@ -130,9 +146,11 @@ class View():
                     self.screen.blit(self.wall_img, (i*self.width_case, j*self.height_case))
                 elif(self.map_tab[i][j] == 2):
                     if(self.out_open):
-                        pg.draw.rect(self.screen, self.next_room_color, (i*self.width_case, (j+1)*self.height_case, self.width_case, self.height_case)) 
+                        print("open")
+                        pg.draw.rect(self.screen, self.next_room_color, (i*self.width_case, j*self.height_case, self.width_case, self.height_case)) 
                     else:
-                        self.screen.blit(self.floor_img, (i*self.width_case, (j+1)*self.height_case))
+                        print(len(self.monsters))
+                        self.screen.blit(self.floor_img, (i*self.width_case, j*self.height_case))
 
     def display_monsters(self):
         nb_ghost = len(self.monsters)
@@ -242,7 +260,7 @@ class View():
         self.width_monster = 20
         self.height_monster = 20
         self.base_hp_monsters = 10
-        self.nb_monster_per_room = 5
+        self.nb_monster_per_room = 10
         self.bg_color = (0, 0, 0)
         self.next_room_color = (255, 246, 159)
         self.bullets_color = (228, 91, 0)
@@ -254,7 +272,7 @@ class View():
         self.nb_case_horizontal = 60
         self.width_case = int(self.size[0]/self.nb_case_horizontal)
         self.height_case = int(self.size[1]/self.nb_case_vertical)
-        self.speed = 4
+        self.speed = 6
         self.monster_speed = 5
         self.moves = [[False, (self.speed, 0)], [False, (-self.speed, 0)], [False, (0, self.speed)], [False, (0, -self.speed)]]
         self.player_pos = [int(self.size[0]/2), int(self.size[1]/2)]
