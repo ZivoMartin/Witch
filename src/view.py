@@ -81,13 +81,12 @@ class View():
     def move_monsters(self):
         nb_monster = len(self.monsters)
         for i in range(nb_monster):
-            if(self.monsters[i]["move"][2] != -1):
-
+            if(self.wall_between_monster_player(self, i)):
                 x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
                 if(not self.its_a_wall(x, y)):
                     self.monsters[i]["x"] = x
                     self.monsters[i]["y"] = y
-                    if(self.monsters[i]["move"][2] == 0):
+                    if(self.monsters[i]["move"][2] <= 0):
                         self.change_random_move(i)
                     else:
                         self.monsters[i]["move"][2] -= 1
@@ -97,6 +96,8 @@ class View():
                 self.get_next_move(i)     
                 x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
                 self.monsters[i]["x"], self.monsters[i]["y"] = x, y
+    
+
 
     def change_random_move(self, i):
         self.monsters[i]["move"][0] = randint(-self.monster_speed, self.monster_speed)
@@ -253,7 +254,7 @@ class View():
         self.width_case = int(self.size[0]/self.nb_case_horizontal)
         self.height_case = int(self.size[1]/self.nb_case_vertical)
         self.speed = 4
-        self.monster_speed = 6
+        self.monster_speed = 5
         self.moves = [[False, (self.speed, 0)], [False, (-self.speed, 0)], [False, (0, self.speed)], [False, (0, -self.speed)]]
         self.player_pos = [int(self.size[0]/2), int(self.size[1]/2)]
         self.moves_dico = {'z': 3, 'q': 1, 'd': 0, 's': 2}
