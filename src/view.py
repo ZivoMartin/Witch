@@ -97,7 +97,8 @@ class View():
                 x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
                 self.monsters[i]["x"], self.monsters[i]["y"] = x, y
     
-
+    def wall_between_monster_player(self, i):
+        pass
 
     def change_random_move(self, i):
         self.monsters[i]["move"][0] = randint(-self.monster_speed, self.monster_speed)
