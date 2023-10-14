@@ -32,14 +32,14 @@ class Game():
                 else:
                     self.out_open = False
                 self.display_map()
+                self.display_room_number()
+                pg.draw.rect(self.screen, self.health_bar_color, (0, self.size[1]-8, self.current_hp_player*self.size[0]/self.max_hp_player, self.menu_bar_height+8))
                 self.display_bullets()
                 self.display_explosions()
                 self.move_player()
                 self.display_monsters()
                 self.move_monsters()
-                pg.draw.rect(self.screen, self.health_bar_color, (0, self.size[1]-8, self.current_hp_player*self.size[0]/self.max_hp_player, self.menu_bar_height+8))
                 pg.draw.circle(self.screen, "black", self.player_pos, 20)
-
             else:
                 self.screen.blit(self.game_over_txt, (int(self.size[0]*0.35), int(self.size[1]*0.4)))
             pg.display.flip()
@@ -100,7 +100,7 @@ class Game():
                 else:
                     self.change_random_move(i)
             else:
-                self.get_next_move(i)     
+                self.get_next_move(i)    
                 x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
                 self.monsters[i]["x"], self.monsters[i]["y"] = x, y
                 if(self.player_pos[0]<x+30 and self.player_pos[0]>x-30 and self.player_pos[1]<y+30 and self.player_pos[1]>y-30):
@@ -113,13 +113,14 @@ class Game():
             factor_x = 1
         if(y_m-y_p < 0):
             factor_y = 1
-        while(not (x_m <= x_p+self.width_case and x_m>=x_p-self.width_case and y_m <= y_p+self.height_case and y_m>=y_p-self.height_case)):
+        x, y = self.convert(x_m, y_m)
+        while(self.coord_valid(x, y) and not (x_m <= x_p+self.width_case and x_m>=x_p-self.width_case and y_m <= y_p+self.height_case and y_m>=y_p-self.height_case)):
             if(randint(0, abs(x_m-x_p)+abs(y_m-y_p)) < abs(x_m-x_p)):
                 x_m += factor_x*self.monster_speed
             else:
                 y_m += factor_y*self.monster_speed
             x, y = self.convert(x_m, y_m)
-            if(self.map_tab[x][y] == 1):
+            if(self.coord_valid(x, y) and self.map_tab[x][y] == 1):
                 return True
         return False
 
@@ -175,7 +176,7 @@ class Game():
         for i in range(self.nb_monster_per_room):
             x, y = randint(0, self.size[0]-1), randint(0, self.size[1]-1)
             x_case, y_case = self.convert(x, y)
-            while(self.map_tab[x_case][y_case] == 1):
+            while(not self.coord_valid(x_case, y_case) or self.map_tab[x_case][y_case] == 1):
                 x, y = randint(0, self.size[0]-1), randint(10, self.size[1]-10)
                 x_case, y_case = self.convert(x, y)
             self.monsters.append({"x": x, "y": y, "hp": self.base_hp_monsters, "red": 0, "move": [0, 0, -1]})
@@ -204,9 +205,15 @@ class Game():
                 self.explosions.pop(i)
     
     def its_a_wall(self, i, j):
-        i, j = self.convert(i, j)
-        return not self.coord_valid(i, j) or self.map_tab[i][j] == 1
-
+        i_l, i_r, j_t, j_b = i-self.width_monster, i+self.width_monster, j-self.heigh_monster, j+self.heigh_monster
+        x_t = [i_l, i_r]
+        y_t = [j_t, j_b]
+        result = []
+        for k in range(2):
+            for l in range(2)
+                x, y = self.convert(x_t[k], y_t[l])
+                result.append(self.coord_valid(x, y) or self.map_tab[x][y] == 1)
+        return True in result
     def its_change_room_case(self, i, j):
         i, j = self.convert(i, j)
         return self.coord_valid(i, j) and self.map_tab[i][j] == 2
@@ -258,9 +265,16 @@ class Game():
     def try_to_switch_map(self):
         if(self.out_open and self.its_change_room_case(self.player_pos[0], self.player_pos[1])):
             self.monster_speed += 2
+            self.current_room += 1
             self.map_tab = self.generate_random_map()
             self.spawn_player()
             self.generate_ennemys()
+    
+    
+    def display_room_number(self):
+        nb_room_txt = self.font_nb_room.render('Room '+str(self.current_room), False, (0, 0, 200))
+        self.screen.blit(nb_room_txt, (self.size[0]-150, 30))
+
     
     def init_const(self):    
         self.bullets = []
@@ -277,6 +291,7 @@ class Game():
         self.next_room_color = (255, 246, 159)
         self.bullets_color = (228, 91, 0)
         self.iter = 0
+        self.current_room = 1
         self.bullet_damage = 2
         self.damage_monster = 1
         self.running = True
@@ -300,8 +315,10 @@ class Game():
         self.explosion_img = pg.transform.scale(self.explosion_img, (10, 10))
         self.wall_img = pg.transform.scale(self.wall_img, (self.width_case, self.height_case))
         self.floor_img = pg.transform.scale(self.floor_img, (self.width_case, self.height_case))
-        self.font = pg.font.SysFont('Comic Sans MS', 300)
-        self.game_over_txt = self.font.render('Game Over', False, (200, 0, 0))
+        self.font_game_over = pg.font.SysFont('Comic Sans MS', int(self.size[0]*0.09))
+        self.game_over_txt = self.font_game_over.render('Game Over', False, (200, 0, 0))
+        self.font_nb_room = pg.font.SysFont('Comic Sans MS', int(30))
+        
 
 
 def get_param(x1, y1, x2, y2):
