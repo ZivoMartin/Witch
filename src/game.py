@@ -26,7 +26,11 @@ class Game():
             self.iter += 1
             self.screen.fill(self.bg_color)
             self.event_gestion()
-            if(not self.current_hp_player<=0):
+            if(self.current_hp_player <= 0):
+                self.screen.blit(self.game_over_txt, (int(self.size[0]*0.35), int(self.size[1]*0.4)))
+            elif(self.choix_en_cours):
+                self.display_choose_menu()
+            else:
                 if(len(self.monsters) == 0):
                     self.out_open = True
                 else:
@@ -40,8 +44,6 @@ class Game():
                 self.display_monsters()
                 self.move_monsters()
                 pg.draw.circle(self.screen, "black", self.player_pos, self.player_height)
-            else:
-                self.screen.blit(self.game_over_txt, (int(self.size[0]*0.35), int(self.size[1]*0.4)))
             pg.display.flip()
             clock.tick(60)
         pg.quit()
@@ -60,11 +62,25 @@ class Game():
                 elif(event.type == pg.KEYUP and event.unicode in self.moves_dico):
                     self.moves[self.moves_dico[event.unicode]][0] = False
                 elif(event.type == pg.MOUSEBUTTONDOWN and event.button == 1):
-                    x1, y1, x2, y2 = self.player_pos[0], self.player_pos[1], event.pos[0], event.pos[1]
-                    if(x1 != x2):
-                        m, d, b, f = get_param(x1, y1, x2, y2)
-                        self.bullets.append({"x": x1, "y": y1, "m": m, "dist": d-self.bullets_speed, "b": b, "f": f, "x2": x2, "y2": y2})
-        
+                    if(not self.choix_en_cours):
+                        x1, y1, x2, y2 = self.player_pos[0], self.player_pos[1], event.pos[0], event.pos[1]
+                        if(x1 != x2):
+                            m, d, b, f = get_param(x1, y1, x2, y2)
+                            self.bullets.append({"x": x1, "y": y1, "m": m, "dist": d-self.bullets_speed, "b": b, "f": f, "x2": x2, "y2": y2})
+                    else:
+                        x, y = event.pos[0], event.pos[1]
+                        if(y>=self.size[1]*0.1 and y<=self.size[1]*0.3):
+                            self.choix_en_cours = False
+                            self.speed = int(self.speed*1.2)
+                            self.moves = [[False, (self.speed, 0)], [False, (-self.speed, 0)], [False, (0, self.speed)], [False, (0, -self.speed)]]
+                        elif(y>=self.size[1]*0.3 and y<=self.size[1]*0.6):
+                            self.choix_en_cours = False
+                            self.bullet_damage += 2
+                        elif(y>=self.size[1]*0.7 and y<=self.size[1]*0.9):
+                            self.choix_en_cours = False
+                            self.current_hp_player = self.max_hp_player
+
+                        
     def display_bullets(self):
         for i in range(len(self.bullets)):
             if(i>=len(self.bullets)):
@@ -147,7 +163,17 @@ class Game():
             self.monsters[i]["move"][0] = 0
             self.monsters[i]["move"][1] = factor_y*self.monster_speed
             
-        
+
+    def display_choose_menu(self):
+        pg.draw.rect(self.screen, self.augment_case_color, (0, int(self.size[1]*0.1), self.size[0], int(self.size[1]*0.3-self.size[1]*0.1))) 
+        pg.draw.rect(self.screen, self.augment_case_color, (0, int(self.size[1]*0.4), self.size[0], int(self.size[1]*0.6-self.size[1]*0.4))) 
+        pg.draw.rect(self.screen, self.augment_case_color, (0, int(self.size[1]*0.7), self.size[0], int(self.size[1]*0.9-self.size[1]*0.7))) 
+        txt = self.font_nb_room.render('Augmenter votre vitesse', False, (0, 0, 200))
+        self.screen.blit(txt, (int(self.size[0]*0.4), int(self.size[1]*0.2)))
+        txt = self.font_nb_room.render('Augmenter vos dégats', False, (0, 0, 200))
+        self.screen.blit(txt, (int(self.size[0]*0.4), int(self.size[1]*0.5)))
+        txt = self.font_nb_room.render('Récuperez votre vie', False, (0, 0, 200))
+        self.screen.blit(txt, (int(self.size[0]*0.4), int(self.size[1]*0.8)))
 
     def display_map(self):
         for i in range(self.nb_case_horizontal):
@@ -262,12 +288,14 @@ class Game():
             
     def try_to_switch_map(self):
         if(self.out_open and self.its_change_room_case(self.player_pos[0], self.player_pos[1])):
+            self.choix_en_cours = True
             self.monster_speed += 2
             self.current_room += 1
             self.map_tab = self.generate_random_map()
             self.spawn_player()
             self.generate_ennemys()
-    
+            self.augment_choosed = False
+
     
     def display_room_number(self):
         nb_room_txt = self.font_nb_room.render('Room '+str(self.current_room), False, (0, 0, 200))
@@ -279,19 +307,21 @@ class Game():
         self.explosions = []
         self.monsters = []
         self.base_hp_monsters = 10
-        self.nb_monster_per_room = 6
+        self.nb_monster_per_room = 1
         self.bg_color = (0, 0, 0)
         self.current_hp_player = 100
         self.max_hp_player = 100
         self.health_bar_color = (150, 0, 0)
         self.next_room_color = (255, 246, 159)
         self.bullets_color = (228, 91, 0)
+        self.augment_case_color = (230, 0, 0)
         self.iter = 0
         self.current_room = 1
         self.bullet_damage = 2
         self.damage_monster = 1
         self.running = True
         self.out_open = False
+        self.choix_en_cours = False
         self.nb_case_vertical = 30
         self.nb_case_horizontal = 50
         self.width_case = self.size[0]//self.nb_case_horizontal
@@ -317,8 +347,8 @@ class Game():
         self.floor_img = pg.transform.scale(self.floor_img, (self.width_case, self.height_case))
         self.font_game_over = pg.font.SysFont('Comic Sans MS', int(self.size[0]*0.09))
         self.game_over_txt = self.font_game_over.render('Game Over', False, (200, 0, 0))
-        self.font_nb_room = pg.font.SysFont('Comic Sans MS', int(30))
-        
+        self.font_nb_room = pg.font.SysFont('Comic Sans MS', 30)
+        self.font_augment = pg.font.SysFont('Comic Sans MS', 100)
 
 
 def get_param(x1, y1, x2, y2):
