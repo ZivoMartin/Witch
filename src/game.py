@@ -39,7 +39,7 @@ class Game():
                 self.move_player()
                 self.display_monsters()
                 self.move_monsters()
-                pg.draw.circle(self.screen, "black", self.player_pos, 20)
+                pg.draw.circle(self.screen, "black", self.player_pos, self.player_height)
             else:
                 self.screen.blit(self.game_over_txt, (int(self.size[0]*0.35), int(self.size[1]*0.4)))
             pg.display.flip()
@@ -69,18 +69,18 @@ class Game():
         for i in range(len(self.bullets)):
             if(i>=len(self.bullets)):
                 break
-            pg.draw.circle(self.screen, self.bullets_color, (self.bullets[i]["x"], self.bullets[i]["y"]), 10)
+            pg.draw.circle(self.screen, self.bullets_color, (self.bullets[i]["x"], self.bullets[i]["y"]), self.bullet_height)
             self.bullets[i]["dist"] -= self.bullets_speed
             self.bullets[i]["x"] = self.bullets[i]["x2"] - int(self.bullets[i]["f"]*(self.bullets[i]["dist"]/math.sqrt(self.bullets[i]["m"]**2 + 1)))
             self.bullets[i]["y"] = int(self.bullets[i]["x"]*self.bullets[i]["m"] + self.bullets[i]["b"])
-            if(self.its_a_wall(self.bullets[i]["x"], self.bullets[i]["y"]) or self.monster_touched_by_bullet(i)):
+            if(self.its_a_wall(self.bullets[i]["x"], self.bullets[i]["y"], self.bullet_height) or self.monster_touched_by_bullet(i)):
                 self.explosions.append([self.bullets[i]["x"], self.bullets[i]["y"], 10])
                 self.bullets.pop(i)
                 
                     
     def move_player(self):
         for i in range(4):
-            if(self.moves[i][0] and not self.its_a_wall(self.player_pos[0]+self.moves[i][1][0], self.player_pos[1]+self.moves[i][1][1])):
+            if(self.moves[i][0] and not self.its_a_wall(self.player_pos[0]+self.moves[i][1][0], self.player_pos[1]+self.moves[i][1][1], self.player_height)):
                 self.player_pos[0] += self.moves[i][1][0]
                 self.player_pos[1] += self.moves[i][1][1]
                 self.try_to_switch_map()  
@@ -90,7 +90,7 @@ class Game():
         for i in range(nb_monster):
             if(self.wall_between_monster_player(i)):
                 x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
-                if(not self.its_a_wall(x, y)):
+                if(not self.its_a_wall(x, y, self.height_monster)):
                     self.monsters[i]["x"] = x
                     self.monsters[i]["y"] = y
                     if(self.monsters[i]["move"][2] <= 0):
@@ -102,9 +102,10 @@ class Game():
             else:
                 self.get_next_move(i)    
                 x, y = self.monsters[i]["x"] + self.monsters[i]["move"][0], self.monsters[i]["y"] + self.monsters[i]["move"][1]
-                self.monsters[i]["x"], self.monsters[i]["y"] = x, y
-                if(self.player_pos[0]<x+30 and self.player_pos[0]>x-30 and self.player_pos[1]<y+30 and self.player_pos[1]>y-30):
-                    self.current_hp_player -= self.damage_monster
+                if(not self.its_a_wall(x, y, self.height_monster)):
+                    self.monsters[i]["x"], self.monsters[i]["y"] = x, y
+                    if(self.player_pos[0]<x+30 and self.player_pos[0]>x-30 and self.player_pos[1]<y+30 and self.player_pos[1]>y-30):
+                        self.current_hp_player -= self.damage_monster
     
     def wall_between_monster_player(self, i):
         x_p, y_p, x_m, y_m = self.player_pos[0], self.player_pos[1], self.monsters[i]["x"], self.monsters[i]["y"]
@@ -175,10 +176,8 @@ class Game():
         self.monsters = []
         for i in range(self.nb_monster_per_room):
             x, y = randint(0, self.size[0]-1), randint(0, self.size[1]-1)
-            x_case, y_case = self.convert(x, y)
-            while(not self.coord_valid(x_case, y_case) or self.map_tab[x_case][y_case] == 1):
+            while(self.its_a_wall(x, y, self.height_monster)):
                 x, y = randint(0, self.size[0]-1), randint(10, self.size[1]-10)
-                x_case, y_case = self.convert(x, y)
             self.monsters.append({"x": x, "y": y, "hp": self.base_hp_monsters, "red": 0, "move": [0, 0, -1]})
             
     def monster_touched_by_bullet(self, indice_bullet):
@@ -204,16 +203,15 @@ class Game():
             if(self.explosions[i][2] == self.life_time_explosions):
                 self.explosions.pop(i)
     
-    def its_a_wall(self, i, j):
-        i_l, i_r, j_t, j_b = i-self.width_monster, i+self.width_monster, j-self.heigh_monster, j+self.heigh_monster
-        x_t = [i_l, i_r]
-        y_t = [j_t, j_b]
-        result = []
-        for k in range(2):
-            for l in range(2)
+    def its_a_wall(self, i, j, h):
+        h = int(h*0.7)
+        x_t, y_t, result = [i, i-h, i+h], [j, j-h, j+h], []
+        for k in range(3):
+            for l in range(3):
                 x, y = self.convert(x_t[k], y_t[l])
-                result.append(self.coord_valid(x, y) or self.map_tab[x][y] == 1)
+                result.append(not self.coord_valid(x, y) or self.map_tab[x][y] == 1)
         return True in result
+    
     def its_change_room_case(self, i, j):
         i, j = self.convert(i, j)
         return self.coord_valid(i, j) and self.map_tab[i][j] == 2
@@ -226,8 +224,6 @@ class Game():
             y = -1
         return x, y
         
-    def generate_random_coord(self):
-        return [randint(0, self.size[0]), randint(0, self.size[1])]
 
     def generate_random_map(self):
         map_tab = [None]*self.nb_case_horizontal
@@ -251,16 +247,18 @@ class Game():
     
     def coord_valid(self, i, j):
         return i>=0 and j>=0 and i<(self.nb_case_horizontal) and j<(self.nb_case_vertical)
+    
+    def brut_coord_valid(self, i, j):
+        i, j = self.convert(i, j)
+        return self.coord_valid(i, j)
         
     def there_is_a_wall_near(self, map_tab, i, j):  
         return (i-1>=0 and map_tab[i-1][j] == 1) or (i+1<self.nb_case_horizontal and map_tab[i+1][j] == 1) or (j+1<self.nb_case_vertical and map_tab[i][j+1] == 1) or (j-1>=0 and map_tab[i][j-1] == 1)
     
     def spawn_player(self):
-        i, j = self.convert(self.player_pos[0], self.player_pos[1])
-        while(self.map_tab[i][j]):
+        while(self.its_a_wall(self.player_pos[0], self.player_pos[1], self.player_height)):
             self.player_pos[0] = randint(10, self.size[0]-10)
             self.player_pos[1] = randint(10, self.size[1]-10)
-            i, j = self.convert(self.player_pos[0], self.player_pos[1])
             
     def try_to_switch_map(self):
         if(self.out_open and self.its_change_room_case(self.player_pos[0], self.player_pos[1])):
@@ -280,8 +278,6 @@ class Game():
         self.bullets = []
         self.explosions = []
         self.monsters = []
-        self.width_monster = 20
-        self.height_monster = 20
         self.base_hp_monsters = 10
         self.nb_monster_per_room = 6
         self.bg_color = (0, 0, 0)
@@ -296,10 +292,14 @@ class Game():
         self.damage_monster = 1
         self.running = True
         self.out_open = False
-        self.nb_case_vertical = 40
-        self.nb_case_horizontal = 60
-        self.width_case = int(self.size[0]/self.nb_case_horizontal)
-        self.height_case = int(self.size[1]/self.nb_case_vertical)
+        self.nb_case_vertical = 30
+        self.nb_case_horizontal = 50
+        self.width_case = self.size[0]//self.nb_case_horizontal
+        self.height_case = self.size[1]//self.nb_case_vertical
+        self.player_height = min(self.width_case//2, self.height_case//2)
+        self.bullet_height = self.player_height//2
+        self.width_monster = self.player_height
+        self.height_monster = self.player_height
         self.speed = 6
         self.monster_speed = 5
         self.moves = [[False, (self.speed, 0)], [False, (-self.speed, 0)], [False, (0, self.speed)], [False, (0, -self.speed)]]
