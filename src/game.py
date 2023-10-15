@@ -9,8 +9,6 @@ class Game():
     
     def __init__(self, img_path):
         self.img_path = img_path
-        pg.init()
-        pg.font.init()
         screen_info = pg.display.Info()
         self.menu_bar_height =30
         self.size = (screen_info.current_w, screen_info.current_h-self.menu_bar_height)
@@ -20,63 +18,9 @@ class Game():
         self.map_tab = self.generate_random_map()
         self.player.spawn()
         self.generate_ennemies()
-        clock = pg.time.Clock()
-        
-        while self.running:
-            self.iter += 1
-            self.screen.fill(self.bg_color)
-            self.event_gestion()
-            if(self.player.get_hp() <= 0):
-                self.screen.blit(self.game_over_txt, (int(self.size[0]*0.35), int(self.size[1]*0.4)))
-            elif(self.choix_en_cours):
-                self.display_choose_menu()
-            else:
-                if(len(self.monsters) == 0):
-                    self.out_open = True
-                else:
-                    self.out_open = False
-                self.display_map()
-                self.display_room_number()
-                pg.draw.rect(self.screen, self.health_bar_color, (0, self.size[1]-8, self.player.get_hp()*self.size[0]/self.player.get_max_hp(), self.menu_bar_height+8))
-                self.display_bullets()
-                self.move_player()
-                self.display_monsters()
-                self.move_monsters()
-                self.player.draw()
-            pg.display.flip()
-            clock.tick(60)
-        pg.quit()
-        
         
 
-
-    def event_gestion(self):
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                self.running = False
-            if(self.player.hp > 0):
-                if(event.type == pg.KEYDOWN):
-                    if(event.unicode in self.moves_dico):
-                        self.moves[self.moves_dico[event.unicode]][0] = True
-                elif(event.type == pg.KEYUP and event.unicode in self.moves_dico):
-                    self.moves[self.moves_dico[event.unicode]][0] = False
-                elif(event.type == pg.MOUSEBUTTONDOWN and event.button == 1):
-                    if(not self.choix_en_cours):
-                        if(self.player.get_x() != event.pos[0]):
-                            self.bullets.append(Bullet(self, self.player, event.pos[0], event.pos[1]))
-                    else:
-                        x, y = event.pos[0], event.pos[1]
-                        if(y>=self.size[1]*0.1 and y<=self.size[1]*0.3):
-                            self.choix_en_cours = False
-                            self.player.set_speed(int(self.player.get_speed()*1.2))
-                            self.moves = [[False, (self.player.get_speed(), 0)], [False, (-self.player.get_speed(), 0)], [False, (0, self.player.get_speed())], [False, (0, -self.player.get_speed())]]
-                        elif(y>=self.size[1]*0.3 and y<=self.size[1]*0.6):
-                            self.choix_en_cours = False
-                            self.bullet_damage += 2
-                        elif(y>=self.size[1]*0.7 and y<=self.size[1]*0.9):
-                            self.choix_en_cours = False
-                            self.player.regen()
-
+  
                         
     def display_bullets(self):
         for i in range(len(self.bullets)):
