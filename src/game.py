@@ -29,9 +29,10 @@ class Game():
                 break
             self.bullets[i].draw()
             self.bullets[i].move()
+            d = self.bullets[i].decal
             if(self.bullets[i].get_count() == 0):
                 self.bullets.pop(i)
-            elif(self.bullets[i].is_alive() and (self.its_a_wall(self.bullets[i].get_x(), self.bullets[i].get_y(), self.bullets[i].get_height()) or self.monster_touched_by_bullet(i))):
+            elif(self.bullets[i].is_alive() and (self.its_a_wall(self.bullets[i].get_x()+d, self.bullets[i].get_y()+d, self.bullets[i].get_height()) or (self.current_room !=5 and self.monster_touched_by_bullet(i)) or (self.current_room == 5 and self.boss_touched_by_bullet(i)))):
                 self.bullets[i].kill()
                 
                     
@@ -49,9 +50,7 @@ class Game():
             else:
                 self.monsters[i].move_on_player()
     
-    def move_boss(self):
-        pass
-    
+
     def wall_between_monster_player(self, i):
         x_p, y_p, x_m, y_m = self.player.get_x(), self.player.get_y(), self.monsters[i].get_x(), self.monsters[i].get_y()
         factor_x, factor_y = -1, -1
@@ -114,7 +113,7 @@ class Game():
                 self.monsters.append(Monster(self, self.player, x, y))
             
     def monster_touched_by_bullet(self, indice_bullet):
-        x, y = self.bullets[indice_bullet].get_x(), self.bullets[indice_bullet].get_y()
+        x, y = self.bullets[indice_bullet].get_x()+self.bullets[indice_bullet].decal, self.bullets[indice_bullet].get_y()+self.bullets[indice_bullet].decal
         nb_monster = len(self.monsters)
         for i in range(nb_monster):
             x_m, y_m, h = self.monsters[i].get_x(), self.monsters[i].get_y(), self.monsters[i].get_height()
@@ -123,6 +122,20 @@ class Game():
                 if(self.monsters[i].get_hp() <= 0):
                     self.monsters.pop(i)
                 return True
+        return False
+    
+    def boss_touched_by_bullet(self, i):
+        x_b, y_b= self.bullets[i].get_x()+self.bullets[i].decal, self.bullets[i].get_y()+self.bullets[i].decal
+        x_m, y_m = self.monsters[0].get_x(), self.monsters[0].get_y()
+        w, h = self.monsters[0].get_img_size()
+        if(x_b<x_m+w and x_b>x_m and y_b < y_m+h and y_b>y_m):
+            print(self.monsters[0].get_hp())
+            self.monsters[0].take_damage(self.bullet_damage)
+            if(self.monsters[0].get_hp() <= 0):
+                self.monsters[0].change_state("dead_golem")
+            elif(self.monsters[0].get_hp() <= 50):
+                self.monsters[0].change_state("hot_golem")
+            return True
         return False
         
     
@@ -169,12 +182,11 @@ class Game():
         return map_tab
 
     def build_boss_map(self):
-        map_tab = [None]*self.nb_case_horizontal
-
+        self.map_tab = [None]*self.nb_case_horizontal
         for i in range(self.nb_case_horizontal):
-            map_tab[i] = [0]*self.nb_case_vertical
+            self.map_tab[i] = [0]*self.nb_case_vertical
             for j in range(self.nb_case_vertical):
-                map_tab[i][j] = 0
+                self.map_tab[i][j] = 0
 
 
     def coord_valid(self, i, j):
@@ -195,7 +207,7 @@ class Game():
             self.monster_speed += 2
             self.current_room += 1
             if(self.current_room == 5):
-                self.build_boss_map
+                self.build_boss_map()
             else:
                 self.map_tab = self.generate_random_map()
             self.player.spawn()
@@ -213,13 +225,13 @@ class Game():
         self.explosions = []
         self.monsters = []
         self.base_hp_monsters = 10
-        self.nb_monster_per_room = 0
+        self.nb_monster_per_room = 6
         self.bg_color = (0, 0, 0)
         self.health_bar_color = (150, 0, 0)
         self.next_room_color = (255, 246, 159)
         self.augment_case_color = (230, 0, 0)
         self.iter = 0
-        self.current_room = 4
+        self.current_room = 1
         self.damage_monster = 1
         self.running = True
         self.out_open = False
@@ -230,9 +242,9 @@ class Game():
         self.height_case = self.size[1]//self.nb_case_vertical
         self.bullet_damage = 2
         self.moves_dico = {'z': 3, 'q': 1, 'd': 0, 's': 2}
-        self.monster_speed = 5
-        self.height_monster = 20
+        self.monster_speed = int(self.size[0]*0.003)
         self.player = Player(self)
+        self.height_monster = self.player.get_height()
         self.moves = [[False, (self.player.get_speed(), 0)], [False, (-self.player.get_speed(), 0)], [False, (0, self.player.get_speed())], [False, (0, -self.player.get_speed())]]
 
     def build_img(self):

@@ -8,14 +8,16 @@ class Bullet():
         self.player = player
         self.click_x = click_x
         self.click_y = click_y
-        self.x = self.player.x
-        self.y = self.player.y
+       
         self.angle_rotate = 15
         self.color = (228, 91, 0)
-        self.speed = 8
+        self.speed = int(self.player.speed*2)
         self.height = self.player.get_height()//2
+        self.decal = 15
+        self.x = self.player.x - self.decal
+        self.y = self.player.y - self.decal
         self.image_bullet = pg.image.load(self.game.img_path + "/kunai/kunai1.png")  
-        self.image_bullet = pg.transform.scale(self.image_bullet, (30, 30))
+        self.image_bullet = pg.transform.scale(self.image_bullet, (2*self.decal, 2*self.decal))
         self.image_explosion = pg.image.load(self.game.img_path + "/explosion.jpg")  
         self.image_explosion = pg.transform.scale(self.image_explosion, (10, 10))
         self.alive = True

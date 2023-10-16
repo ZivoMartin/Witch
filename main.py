@@ -30,7 +30,7 @@ def main():
             if(game.current_room != 5):
                 game.move_monsters()
             else:
-                game.move_boss()
+                game.monsters[0].move()
             game.player.draw()
         pg.display.flip()
         clock.tick(60)
