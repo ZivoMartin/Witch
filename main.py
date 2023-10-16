@@ -6,9 +6,7 @@ from src.bullet import Bullet
 def main():
     pg.init()
     pg.font.init()
-    # game = Game("/net/cremi/mzivojinovic/espaces/Witch/img")
-    game = Game("/home/martin/Travail/Perso/Witch/img")
-
+    game = Game("./img")
     clock = pg.time.Clock()
     while game.running:
         game.iter += 1
@@ -29,7 +27,10 @@ def main():
             game.display_bullets()
             game.move_player()
             game.display_monsters()
-            game.move_monsters()
+            if(game.current_room != 5):
+                game.move_monsters()
+            else:
+                game.move_boss()
             game.player.draw()
         pg.display.flip()
         clock.tick(60)

@@ -10,9 +10,12 @@ class Bullet():
         self.click_y = click_y
         self.x = self.player.x
         self.y = self.player.y
+        self.angle_rotate = 15
         self.color = (228, 91, 0)
-        self.speed = 20
+        self.speed = 8
         self.height = self.player.get_height()//2
+        self.image_bullet = pg.image.load(self.game.img_path + "/kunai/kunai1.png")  
+        self.image_bullet = pg.transform.scale(self.image_bullet, (30, 30))
         self.image_explosion = pg.image.load(self.game.img_path + "/explosion.jpg")  
         self.image_explosion = pg.transform.scale(self.image_explosion, (10, 10))
         self.alive = True
@@ -53,9 +56,12 @@ class Bullet():
     
     def draw(self):
         if(self.alive):
-            pg.draw.circle(self.game.screen, self.color, (self.x, self.y), self.height)
+            # pg.draw.circle(self.game.screen, self.color, (self.x, self.y), self.height)
+            self.game.screen.blit(self.image_bullet, (self.x, self.y))
+            # self.image_bullet = pg.transform.rotate(self.image_bullet, self.angle_rotate)
         else:
-            self.game.screen.blit(self.image_explosion, (self.x, self.y))
+            pass
+            # self.game.screen.blit(self.image_explosion, (self.x, self.y))
     
     def get_param(self, x1, y1, x2, y2):
         m = (y1-y2)/(x1-x2)

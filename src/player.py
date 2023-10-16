@@ -44,7 +44,8 @@ class Player():
         while(self.game.its_a_wall(self.x, self.y, self.height)):
             self.x = randint(10, self.game.size[0]-10)
             self.y = randint(10, self.game.size[1]-10)
-    
+            
+
     def regen(self):
         self.hp = self.max_hp
 
