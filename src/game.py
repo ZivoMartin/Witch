@@ -225,13 +225,13 @@ class Game():
         self.explosions = []
         self.monsters = []
         self.base_hp_monsters = 10
-        self.nb_monster_per_room = 6
+        self.nb_monster_per_room = 0
         self.bg_color = (0, 0, 0)
         self.health_bar_color = (150, 0, 0)
         self.next_room_color = (255, 246, 159)
         self.augment_case_color = (230, 0, 0)
         self.iter = 0
-        self.current_room = 1
+        self.current_room = 4
         self.damage_monster = 1
         self.running = True
         self.out_open = False
