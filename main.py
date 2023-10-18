@@ -21,16 +21,23 @@ def main():
                 game.out_open = True
             else:
                 game.out_open = False
+            
             game.display_map()
             game.display_room_number()
             pg.draw.rect(game.screen, game.health_bar_color, (0, game.size[1]-8, game.player.get_hp()*game.size[0]/game.player.get_max_hp(), game.menu_bar_height+8))
             game.display_bullets()
             game.move_player()
-            game.display_monsters()
-            if(game.current_room != 5):
-                game.move_monsters()
+            if(game.start_count < 50):
+                game.start_count += 1
+            elif(game.start_count == 50):
+                game.generate_ennemies()q
+                game.start_count += 1
             else:
-                game.monsters[0].move()
+                game.display_monsters()
+                if(game.current_room != 5):
+                    game.move_monsters()
+                else:
+                    game.monsters[0].move()
             game.player.draw()
         pg.display.flip()
         clock.tick(60)

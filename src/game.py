@@ -81,7 +81,7 @@ class Game():
         self.screen.blit(txt, (int(self.size[0]*0.4), int(self.size[1]*0.2)))
         txt = self.font_nb_room.render('Augmenter vos dégats', False, (0, 0, 200))
         self.screen.blit(txt, (int(self.size[0]*0.4), int(self.size[1]*0.5)))
-        txt = self.font_nb_room.render('Récuperez votre vie', False, (0, 0, 200))
+        txt = self.font_nb_room.render('Récuperer votre vie', False, (0, 0, 200))
         self.screen.blit(txt, (int(self.size[0]*0.4), int(self.size[1]*0.8)))
 
     def display_map(self):
@@ -206,12 +206,12 @@ class Game():
             self.choix_en_cours = True
             self.monster_speed += 2
             self.current_room += 1
+            self.start_count = 0
             if(self.current_room == 5):
                 self.build_boss_map()
             else:
                 self.map_tab = self.generate_random_map()
             self.player.spawn()
-            self.generate_ennemies()
             self.augment_choosed = False
 
     
@@ -225,13 +225,14 @@ class Game():
         self.explosions = []
         self.monsters = []
         self.base_hp_monsters = 10
-        self.nb_monster_per_room = 0
+        self.start_count = 0
+        self.nb_monster_per_room = 6
         self.bg_color = (0, 0, 0)
         self.health_bar_color = (150, 0, 0)
         self.next_room_color = (255, 246, 159)
         self.augment_case_color = (230, 0, 0)
         self.iter = 0
-        self.current_room = 4
+        self.current_room = 1
         self.damage_monster = 1
         self.running = True
         self.out_open = False
