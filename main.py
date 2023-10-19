@@ -30,7 +30,7 @@ def main():
             if(game.start_count < 50):
                 game.start_count += 1
             elif(game.start_count == 50):
-                game.generate_ennemies()q
+                game.generate_ennemies()
                 game.start_count += 1
             else:
                 game.display_monsters()

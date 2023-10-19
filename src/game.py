@@ -92,7 +92,7 @@ class Game():
                 elif(self.map_tab[i][j] == 1):
                     self.screen.blit(self.wall_img, (i*self.width_case, j*self.height_case))
                 elif(self.map_tab[i][j] == 2):
-                    if(self.out_open):
+                    if(self.out_open and self.start_count > 50):
                         pg.draw.rect(self.screen, self.next_room_color, (i*self.width_case, j*self.height_case, self.width_case, self.height_case)) 
                     else:
                         self.screen.blit(self.floor_img, (i*self.width_case, j*self.height_case))
@@ -125,18 +125,19 @@ class Game():
         return False
     
     def boss_touched_by_bullet(self, i):
-        x_b, y_b= self.bullets[i].get_x()+self.bullets[i].decal, self.bullets[i].get_y()+self.bullets[i].decal
-        x_m, y_m = self.monsters[0].get_x(), self.monsters[0].get_y()
-        w, h = self.monsters[0].get_img_size()
-        if(x_b<x_m+w and x_b>x_m and y_b < y_m+h and y_b>y_m):
-            print(self.monsters[0].get_hp())
-            self.monsters[0].take_damage(self.bullet_damage)
-            if(self.monsters[0].get_hp() <= 0):
-                self.monsters[0].change_state("dead_golem")
-            elif(self.monsters[0].get_hp() <= 50):
-                self.monsters[0].change_state("hot_golem")
-            return True
-        return False
+        if(self.start_count > 50):
+            x_b, y_b= self.bullets[i].get_x()+self.bullets[i].decal, self.bullets[i].get_y()+self.bullets[i].decal
+            x_m, y_m = self.monsters[0].get_x(), self.monsters[0].get_y()
+            w, h = self.monsters[0].get_img_size()
+            if(x_b<x_m+w and x_b>x_m and y_b < y_m+h and y_b>y_m):
+                print(self.monsters[0].get_hp())
+                self.monsters[0].take_damage(self.bullet_damage)
+                if(self.monsters[0].get_hp() <= 0):
+                    self.monsters[0].change_state("dead_golem")
+                elif(self.monsters[0].get_hp() <= 50):
+                    self.monsters[0].change_state("hot_golem")
+                return True
+            return False
         
     
     def its_a_wall(self, i, j, h):
